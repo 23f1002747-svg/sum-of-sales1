@@ -1,76 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Total Sales Calculator</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Product Sales Dashboard</title>
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-  <div class="max-w-2xl w-full p-6 bg-white rounded shadow">
-    <h1 class="text-2xl font-bold mb-4 text-center">Total Sales Calculator</h1>
-    <div class="mb-4">
-      <button id="loadData" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">Load Data</button>
-    </div>
-    <div class="overflow-x-auto mb-4">
-      <table class="min-w-full table-auto border-collapse border border-gray-300" id="salesTable">
-        <thead>
-          <tr class="bg-gray-200">
-            <th class="border border-gray-300 px-4 py-2">Item</th>
-            <th class="border border-gray-300 px-4 py-2">Quantity</th>
-            <th class="border border-gray-300 px-4 py-2">Price</th>
-            <th class="border border-gray-300 px-4 py-2">Total</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="text-center">
-      <button id="calculate" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded mb-2">Calculate Total Sales</button>
-      <div class="text-xl font-semibold" id="totalSales">Total Sales: $0.00</div>
-    </div>
-  </div>
-  <script>
-    document.getElementById('loadData').addEventListener('click', () => {
-      fetch('data.csv')
-        .then(response => response.text())
-        .then(csvText => {
-          const rows = csvText.trim().split('\n');
-          const tbody = document.querySelector('#salesTable tbody');
-          tbody.innerHTML = '';
-          rows.forEach((row, index) => {
-            if (index === 0) return; // skip header if present
-            const cols = row.split(',');
-            if (cols.length >= 4) {
-              const [item, quantity, price] = cols;
-              const total = parseFloat(quantity) * parseFloat(price);
-              const tr = document.createElement('tr');
-              tr.innerHTML = `
-                <td class="border border-gray-300 px-4 py-2">${item}</td>
-                <td class="border border-gray-300 px-4 py-2">${quantity}</td>
-                <td class="border border-gray-300 px-4 py-2">$${parseFloat(price).toFixed(2)}</td>
-                <td class="border border-gray-300 px-4 py-2">$${total.toFixed(2)}</td>
-              `;
-              tbody.appendChild(tr);
-            }
-          });
-        })
-        .catch(error => {
-          alert('Failed to load data.csv');
-          console.error(error);
-        });
-    });
+<body class="p-4">
+<h1 class="mb-4">Product Sales Dashboard</h1>
+<div class="mb-3">
+<label for="region-filter" class="form-label">Filter by Region:</label>
+<select id="region-filter" class="form-select">
+  <option value="">All Regions</option>
+</select>
+</div>
+<div class="mb-3">
+<label for="currency-picker" class="form-label">Select Currency:</label>
+<select id="currency-picker" class="form-select">
+  <option value="USD">USD</option>
+</select>
+</div>
+<div class="mb-3">
+<h4>Total Sales: <span id="total-sales">0</span> <span id="currency-symbol">$</span></h4>
+</div>
+<table class="table table-striped" id="product-sales-table">
+  <thead>
+    <tr>
+      <th>Product</th>
+      <th>Region</th>
+      <th>Quantity</th>
+      <th>Total Sales (USD)</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script>
+// Data variables
+let data = [];
+let rates = {};
+let currentCurrency = 'USD';
+let currentRate = 1;
 
-    document.getElementById('calculate').addEventListener('click', () => {
-      const tbody = document.querySelector('#salesTable tbody');
-      let totalSales = 0;
-      tbody.querySelectorAll('tr').forEach(tr => {
-        const totalTd = tr.children[3];
-        const amountText = totalTd.textContent.replace('$', '');
-        totalSales += parseFloat(amountText);
-      });
-      document.getElementById('totalSales').textContent = `Total Sales: $${totalSales.toFixed(2)}`;
+// DOM elements
+const regionFilter = document.getElementById('region-filter');
+const currencyPicker = document.getElementById('currency-picker');
+const totalSalesSpan = document.getElementById('total-sales');
+const currencySymbolSpan = document.getElementById('currency-symbol');
+const tbody = document.querySelector('#product-sales-table tbody');
+
+// Load data
+async function loadData() {
+  // Load CSV data
+  const response = await fetch('data.csv');
+  const csvText = await response.text();
+  data = parseCSV(csvText);
+  // Load rates
+  const ratesResponse = await fetch('rates.json');
+  rates = await ratesResponse.json();
+  populateRegions();
+  populateCurrencies();
+  updateTable();
+}
+
+// Parse CSV
+function parseCSV(csv) {
+  const lines = csv.trim().split('\n');
+  const headers = lines[0].split(',');
+  const result = [];
+  for (let i = 1; i < lines.length; i++) {
+    const obj = {};
+    const values = lines[i].split(',');
+    headers.forEach((h, index) => {
+      obj[h.trim()] = values[index].trim();
     });
-  </script>
+    result.push(obj);
+  }
+  return result;
+}
+
+// Populate region filter options
+function populateRegions() {
+  const regions = new Set(data.map(d => d.Region));
+  regions.forEach(region => {
+    const option = document.createElement('option');
+    option.value = region;
+    option.textContent = region;
+    regionFilter.appendChild(option);
+  });
+}
+
+// Populate currency options
+function populateCurrencies() {
+  for (const curr in rates) {
+    const option = document.createElement('option');
+    option.value = curr;
+    option.textContent = curr;
+    currencyPicker.appendChild(option);
+  }
+}
+
+// Update table based on filters
+function updateTable() {
+  const selectedRegion = regionFilter.value;
+  // Filter data
+  const filteredData = selectedRegion ? data.filter(d => d.Region === selectedRegion) : data;
+
+  // Aggregate sales per product
+  const productMap = {};
+  let totalSalesUSD = 0;
+  filteredData.forEach(d => {
+    const product = d.Product;
+    const quantity = parseInt(d.Quantity);
+    const salesUSD = parseFloat(d['Total Sales (USD)']);
+    if (!productMap[product]) {
+      productMap[product] = { quantity: 0, salesUSD: 0 };
+    }
+    productMap[product].quantity += quantity;
+    productMap[product].salesUSD += salesUSD;
+    totalSalesUSD += salesUSD;
+  });
+
+  // Clear table
+  tbody.innerHTML = '';
+
+  // Populate table
+  for (const product in productMap) {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${product}</td><td></td><td>${productMap[product].quantity}</td><td>${productMap[product].salesUSD.toFixed(2)}</td>`;
+    tbody.appendChild(row);
+  }
+
+  // Update total sales in selected currency
+  currentRate = rates[currentCurrency];
+  const totalInCurrency = totalSalesUSD * currentRate;
+  totalSalesSpan.textContent = totalInCurrency.toFixed(2);
+  currencySymbolSpan.textContent = getCurrencySymbol(currentCurrency);
+}
+
+// Helper to get currency symbol
+function getCurrencySymbol(currencyCode) {
+  const symbols = { USD: '$', EUR: '€', GBP: '£', JPY: '¥' };
+  return symbols[currencyCode] || currencyCode;
+}
+
+// Event listeners
+regionFilter.addEventListener('change', updateTable);
+currencyPicker.addEventListener('change', () => {
+  currentCurrency = currencyPicker.value;
+  updateTable();
+});
+
+// Initialize
+loadData();
+</script>
 </body>
 </html>

@@ -1,31 +1,26 @@
-# Total Sales Calculator
+# Product Sales Dashboard
 
-This is a simple web application to calculate total sales from a CSV data file (`data.csv`). It uses Tailwind CSS for styling and vanilla JavaScript for functionality.
+This webpage displays a sales dashboard for products. It includes:
+- A Bootstrap-styled table listing each product with total sales and quantity.
+- Filters to select region and currency.
+- Dynamic calculation of total sales, updated according to selected filters and currency.
 
 ## Features
-- Load data from `data.csv`
-- Display data in a table
-- Calculate total sales based on loaded data
+- Loads sales data from `data.csv`.
+- Loads currency conversion rates from `rates.json`.
+- Filters sales by region.
+- Converts total sales into selected currency using conversion rates.
+- Keeps total sales accurate based on applied filters.
 
 ## Usage
-1. Place your `data.csv` file in the same directory.
+1. Place `data.csv` and `rates.json` in the same directory as `index.html`.
 2. Open `index.html` in a web browser.
-3. Click "Load Data" to load and display the sales data.
-4. Click "Calculate Total Sales" to compute and display the total sales amount.
+3. Use the dropdowns to filter by region and select currency.
+4. View the updated sales data and total.
 
-## Data Format
-Your `data.csv` should have the following columns:
-
-```csv
-Item,Quantity,Price
-Item1,10,2.50
-Item2,5,5.00
-...
-```
-
-## Notes
-- The application expects CSV data with a header row.
-- Quantities and prices should be numerical.
+## Data Files
+- `data.csv`: Contains sales data with columns: Product, Region, Quantity, Total Sales (USD).
+- `rates.json`: Contains currency conversion rates relative to USD.
 
 ## License
 This project is licensed under the MIT License.
