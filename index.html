@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Total Sales Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="max-w-2xl w-full p-6 bg-white rounded shadow">
+    <h1 class="text-2xl font-bold mb-4 text-center">Total Sales Calculator</h1>
+    <div class="mb-4">
+      <button id="loadData" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">Load Data</button>
+    </div>
+    <div class="overflow-x-auto mb-4">
+      <table class="min-w-full table-auto border-collapse border border-gray-300" id="salesTable">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="border border-gray-300 px-4 py-2">Item</th>
+            <th class="border border-gray-300 px-4 py-2">Quantity</th>
+            <th class="border border-gray-300 px-4 py-2">Price</th>
+            <th class="border border-gray-300 px-4 py-2">Total</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="text-center">
+      <button id="calculate" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded mb-2">Calculate Total Sales</button>
+      <div class="text-xl font-semibold" id="totalSales">Total Sales: $0.00</div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('loadData').addEventListener('click', () => {
+      fetch('data.csv')
+        .then(response => response.text())
+        .then(csvText => {
+          const rows = csvText.trim().split('\n');
+          const tbody = document.querySelector('#salesTable tbody');
+          tbody.innerHTML = '';
+          rows.forEach((row, index) => {
+            if (index === 0) return; // skip header if present
+            const cols = row.split(',');
+            if (cols.length >= 4) {
+              const [item, quantity, price] = cols;
+              const total = parseFloat(quantity) * parseFloat(price);
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td class="border border-gray-300 px-4 py-2">${item}</td>
+                <td class="border border-gray-300 px-4 py-2">${quantity}</td>
+                <td class="border border-gray-300 px-4 py-2">$${parseFloat(price).toFixed(2)}</td>
+                <td class="border border-gray-300 px-4 py-2">$${total.toFixed(2)}</td>
+              `;
+              tbody.appendChild(tr);
+            }
+          });
+        })
+        .catch(error => {
+          alert('Failed to load data.csv');
+          console.error(error);
+        });
+    });
+
+    document.getElementById('calculate').addEventListener('click', () => {
+      const tbody = document.querySelector('#salesTable tbody');
+      let totalSales = 0;
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const totalTd = tr.children[3];
+        const amountText = totalTd.textContent.replace('$', '');
+        totalSales += parseFloat(amountText);
+      });
+      document.getElementById('totalSales').textContent = `Total Sales: $${totalSales.toFixed(2)}`;
+    });
+  </script>
+</body>
+</html>
